@@ -49,11 +49,14 @@ fn main() {
   let light_pos = Point3::new(-2.0f32, 3.0f32, 2.0f32);
   let x_translate_step = Translation3::new(0.01, 0.0, 0.0);
 
-  let mut window = Window::new_with_size("play", WINDOW_STD_WIDTH,WINDOW_STD_HEIGHT);
+  let mut window = Window::new_hidden("play");
+//    Window::new_with_size("play", WINDOW_STD_WIDTH,WINDOW_STD_HEIGHT);
   let hidpi_fact = window.hidpi_factor();
-  let true_width: usize = (hidpi_fact * WINDOW_STD_WIDTH as f64) as usize;
-  let true_height: usize = (hidpi_fact * WINDOW_STD_HEIGHT as f64) as usize;
-
+  let win_size = window.size();
+  //let true_width: usize = (hidpi_fact * WINDOW_STD_WIDTH as f64) as usize;
+  //let true_height: usize = (hidpi_fact * WINDOW_STD_HEIGHT as f64) as usize;
+  let true_width = win_size[0] as usize;
+  let true_height = win_size[1] as usize;
 
   let offscreen_target = FramebufferManager::new_render_target(true_width, true_height);
 
