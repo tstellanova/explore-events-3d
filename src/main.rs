@@ -9,10 +9,9 @@ use std::path::Path;
 use nalgebra::{Point3, Translation3};
 use kiss3d::window::Window;
 use kiss3d::light::Light;
-use kiss3d::camera::{FirstPerson, FirstPersonStereo, Camera};
+use kiss3d::camera::{FirstPerson, Camera};
 //use kiss3d::event::{Action, Key, WindowEvent};
 use kiss3d::resource::FramebufferManager;
-//use kiss3d::context::GLContext;
 
 
 const WINDOW_LOGICAL_WIDTH: u32 = 800;
@@ -44,14 +43,14 @@ fn threshold_diff(new_frame: &GrayImage, old_frame: &GrayImage ) -> RgbImage {
 
 fn main() {
 
-  let left_eye = Point3::new(-0.1, 1.1, 2.5);
+  let left_eye = Point3::new(-0.1, 1.25, 3.0);
   let at = Point3::origin();
-  // mean male inter-pupillary distance per
-  // Military Handbook 743A and the 2012 Anthropometric Survey of US Army Personnel
+
   let ipd: f32 = 64.0/1000.0;
-//  let mut camera = FirstPerson::new(left_eye, at);
-  let mut camera = FirstPersonStereo::new(left_eye, at, ipd);
-  let light_pos = Point3::new(-2.0f32, 3.0f32, 2.0f32);
+  let mut camera = FirstPerson::new(left_eye, at);
+  println!("Point at desired: {:?} actual: {:?}", at, camera.at());
+
+  let light_pos = Point3::new(-3.0f32, 6.0f32, 2.0f32);
   let translate_step = Translation3::new(0.01, 0.0, 0.0);
 
   let mut window = Window::new_with_size("play", WINDOW_LOGICAL_WIDTH, WINDOW_LOGICAL_HEIGHT);
@@ -65,8 +64,7 @@ fn main() {
   let physical_width = win_size[0] as usize;
   let physical_height = win_size[1] as usize;
 
-  let offscreen_target = FramebufferManager::new_render_target(physical_width, physical_height);
-
+//  window.set_light(Light::StickToCamera);
   window.set_light( Light::Absolute(light_pos));
 
   let mut cube1      = window.add_cube(1.0,  1.0, 1.0);
@@ -80,8 +78,6 @@ fn main() {
   cube3.set_local_translation(Translation3::new(2.0, 0.0, -4.0));
   cube3.set_color(1.0, 1.0, 1.0);
 
-  let mut fbm = FramebufferManager::new();
-  fbm.select(&offscreen_target);
 
   //throw away garbage renders when context is first opened
   for _i in 0..5 {
@@ -91,8 +87,6 @@ fn main() {
   let mut prior_frame_opt:Option<GrayImage> = None;
   for i in 0..100 {
     println!("step: {}", i);
-    //render plain cubes to offscreen target
-    fbm.select(&offscreen_target);
     if window.render_with_camera(&mut camera) {
       let snap = window.snap_image();
       //let dims = snap.dimensions();
@@ -111,7 +105,6 @@ fn main() {
         let img_path = Path::new(&img_name);
         pixel_diffs.save(img_path).unwrap();
 
-        //fbm.select(fbm.screen());
       }
       prior_frame_opt = Some(lum_img);
 
@@ -120,25 +113,14 @@ fn main() {
 //      img.save(img_path).unwrap();
     }
 
-//    camera.translate_mut( &translate_step);
-
-    let old_eye = camera.eye();
-    let new_eye =   Point3::new(old_eye[0] - 0.01,
-                                old_eye[1] ,
-                                old_eye[2] );
-
-    let old_at = camera.at();
-    let new_at = Point3::new(old_at[0] - 0.01,
-                             old_at[1] ,
-                             old_at[2] );
-    camera.look_at(new_eye, new_at);
+    camera.translate_mut( &translate_step);
 
   }
-  
+
 
   //wait for user to close
-  fbm.select(&FramebufferManager::screen());
-  while window.render_with_camera(&mut camera) {}
+//  fbm.select(&FramebufferManager::screen());
+  //while window.render_with_camera(&mut camera) {}
 
 
 //    while window.render_with_camera(&mut camera)  {

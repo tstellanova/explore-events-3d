@@ -8,7 +8,6 @@ edition = "2018"
 nalgebra = "0.18"
 imageproc = "0.18.0"
 image = "0.21.2"
-#glutin = "0.21.0"
 
 kiss3d = "0.21.0"
 #[dependencies.kiss3d]
