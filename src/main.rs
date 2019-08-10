@@ -11,8 +11,8 @@ use kiss3d::window::Window;
 use kiss3d::light::Light;
 use kiss3d::camera::{FirstPerson};
 //use kiss3d::event::{Action, Key, WindowEvent};
-use kiss3d::resource::FramebufferManager;
-
+//use kiss3d::resource::FramebufferManager;
+use kiss3d::context::GLContext;
 
 fn threshold_diff(new_frame: &GrayImage, old_frame: &GrayImage ) -> RgbImage {
 
@@ -37,11 +37,10 @@ fn threshold_diff(new_frame: &GrayImage, old_frame: &GrayImage ) -> RgbImage {
 }
 
 
-const WINDOW_STD_WIDTH: u32 = 640;
-const WINDOW_STD_HEIGHT: u32 = 480;
+const WINDOW_LOGICAL_WIDTH: u32 = 640;
+const WINDOW_LOGICAL_HEIGHT: u32 = 480;
 
 fn main() {
-
 
   let eye = Point3::new(0.1, 1.1, 2.5);
   let at = Point3::origin();
@@ -49,8 +48,10 @@ fn main() {
   let light_pos = Point3::new(-2.0f32, 3.0f32, 2.0f32);
   let x_translate_step = Translation3::new(0.01, 0.0, 0.0);
 
-  let mut window = Window::new_hidden("play");
-//    Window::new_with_size("play", WINDOW_STD_WIDTH,WINDOW_STD_HEIGHT);
+//  let mut ctx = GLContext::new();
+
+  let mut window = Window::new_with_size("play", WINDOW_LOGICAL_WIDTH, WINDOW_LOGICAL_HEIGHT);
+  window.height();
   let hidpi_fact = window.hidpi_factor();
   let win_size = window.size();
   //let true_width: usize = (hidpi_fact * WINDOW_STD_WIDTH as f64) as usize;
@@ -58,7 +59,7 @@ fn main() {
   let true_width = win_size[0] as usize;
   let true_height = win_size[1] as usize;
 
-  let offscreen_target = FramebufferManager::new_render_target(true_width, true_height);
+  //let offscreen_target = FramebufferManager::new_render_target(true_width, true_height);
 
   window.set_light( Light::Absolute(light_pos));
 
@@ -73,8 +74,8 @@ fn main() {
   cube3.set_local_translation(Translation3::new(2.0, 0.0, -4.0));
   cube3.set_color(1.0, 1.0, 1.0);
 
-  let mut fbm = FramebufferManager::new();
-  fbm.select(&offscreen_target);
+  //let mut fbm = FramebufferManager::new();
+  //fbm.select(&offscreen_target);
 
   //throw away garbage renders when context is first opened
   for _i in 0..5 {
@@ -87,6 +88,8 @@ fn main() {
 
   let mut prior_frame_opt:Option<GrayImage> = None;
   for i in 0..100 {
+    //render plain cubes to offscreen targer
+//    fbm.select(&offscreen_target);
     if window.render_with_camera(&mut camera) {
       let snap = window.snap_image();
       //let dims = snap.dimensions();
@@ -104,6 +107,9 @@ fn main() {
         let img_name = format!("./out/diff_{}.png", i);
         let img_path = Path::new(&img_name);
         pixel_diffs.save(img_path).unwrap();
+
+        //fbm.select(fbm.screen());
+
       }
       prior_frame_opt = Some(lum_img);
 
