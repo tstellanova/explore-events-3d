@@ -5,6 +5,7 @@ use image::{RgbImage, DynamicImage, GrayImage, Rgb};
 use imageproc::map::map_pixels;
 
 use std::path::Path;
+use std::fs::create_dir_all;
 
 use nalgebra::{Point3, Translation3};
 use kiss3d::window::Window;
@@ -44,13 +45,15 @@ fn threshold_diff(new_frame: &GrayImage, old_frame: &GrayImage ) -> RgbImage {
 
 fn main() {
 
-  let left_eye = Point3::new(-0.1, 1.1, 2.5);
+  create_dir_all("./out/").unwrap();
+
+  let left_eye = Point3::new(-0.1, 1.1, 3.0);
   let at = Point3::origin();
   // mean male inter-pupillary distance per
   // Military Handbook 743A and the 2012 Anthropometric Survey of US Army Personnel
-  let ipd: f32 = 64.0/1000.0;
-//  let mut camera = FirstPerson::new(left_eye, at);
-  let mut camera = FirstPersonStereo::new(left_eye, at, ipd);
+  //let ipd: f32 = 64.0/1000.0;
+  let mut camera = FirstPerson::new(left_eye, at);
+//  let mut camera = FirstPersonStereo::new(left_eye, at, ipd);
   let light_pos = Point3::new(-2.0f32, 3.0f32, 2.0f32);
   let translate_step = Translation3::new(0.01, 0.0, 0.0);
 
@@ -83,6 +86,8 @@ fn main() {
   let mut fbm = FramebufferManager::new();
   fbm.select(&offscreen_target);
 
+  let mut tex_mgr = kiss3d::resource::TextureManager::new();
+
   //throw away garbage renders when context is first opened
   for _i in 0..5 {
     window.render_with_camera(&mut camera);
@@ -91,6 +96,9 @@ fn main() {
   let mut prior_frame_opt:Option<GrayImage> = None;
   for i in 0..100 {
     println!("step: {}", i);
+    let diff_img_name = format!("./out/diff_{}.png", i);
+    let diff_img_path = Path::new(&diff_img_name);
+
     //render plain cubes to offscreen target
     fbm.select(&offscreen_target);
     if window.render_with_camera(&mut camera) {
@@ -106,39 +114,45 @@ fn main() {
 
       if let Some(prior_frame) = prior_frame_opt {
         let pixel_diffs = threshold_diff(&lum_img, &prior_frame);
+        pixel_diffs.save(diff_img_path).unwrap();
 
-        let img_name = format!("./out/diff_{}.png", i);
-        let img_path = Path::new(&img_name);
-        pixel_diffs.save(img_path).unwrap();
+//        tex.mgr.add_image(diff_img_name, &pixel_difs);
 
-        //fbm.select(fbm.screen());
+        fbm.select(&FramebufferManager::screen());
+        let mut overlay_rect = window.add_rectangle(win_size[0] as f32, win_size[1] as f32);
+        overlay_rect.set_texture_from_file(&diff_img_path, &diff_img_name);
+        //TODO any way to avoid rerendering the entire thing??
+        window.render_with_camera(&mut camera);
+        window.remove_planar_node(&mut overlay_rect);
+
       }
       prior_frame_opt = Some(lum_img);
+
 
 //      let img_name = format!("./out/frame_{}.png", i);
 //      let img_path = Path::new(&img_name);
 //      img.save(img_path).unwrap();
     }
 
-//    camera.translate_mut( &translate_step);
+    camera.translate_mut( &translate_step);
 
-    let old_eye = camera.eye();
-    let new_eye =   Point3::new(old_eye[0] - 0.01,
-                                old_eye[1] ,
-                                old_eye[2] );
-
-    let old_at = camera.at();
-    let new_at = Point3::new(old_at[0] - 0.01,
-                             old_at[1] ,
-                             old_at[2] );
-    camera.look_at(new_eye, new_at);
+//    let old_eye = camera.eye();
+//    let new_eye =   Point3::new(old_eye[0] - 0.01,
+//                                old_eye[1] ,
+//                                old_eye[2] );
+//
+//    let old_at = camera.at();
+//    let new_at = Point3::new(old_at[0] - 0.01,
+//                             old_at[1] ,
+//                             old_at[2] );
+//    camera.look_at(new_eye, new_at);
 
   }
   
 
   //wait for user to close
-  fbm.select(&FramebufferManager::screen());
-  while window.render_with_camera(&mut camera) {}
+ // fbm.select(&FramebufferManager::screen());
+ // while window.render_with_camera(&mut camera) {}
 
 
 //    while window.render_with_camera(&mut camera)  {
